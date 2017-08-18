@@ -285,16 +285,14 @@ def db_cleanup():
             pastdate = datetime.now() - timedelta(minutes=release_timeout)
             accounts = Account.select().where(
                 Account.system_id.is_null(False) & (Account.last_modified <= pastdate))
-            num = 0
+            if len(accounts) > 0:
+                log.info("Releasing {} accounts that haven't been updated in the last {} minutes.".format(len(accounts),
+                                                                                                         release_timeout))
             for acc in accounts:
-                num += 1
-                new_account_event(acc, "Got auto-released from [{}]".format(acc.system_id))
+                new_account_event(acc, "Auto-releasing from [{}]".format(acc.system_id))
                 acc.system_id = None
                 acc.last_modified = datetime.now()
                 acc.save()
-            if num > 0:
-                log.info("Released {} accounts that haven't been updated in the last {} minutes.".format(num,
-                                                                                                         release_timeout))
         except Exception as e:
             log.error(e)
 
