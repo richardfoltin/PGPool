@@ -95,39 +95,52 @@ class Account(flaskDb.Model):
     #     }
 
     @staticmethod
-    def get_unused(system_id, count=1, min_level=1, lat=None, lng=None):
+    def get_accounts(system_id, count=1, min_level=1, max_level=40, lat=None, lng=None, include_already_assigned=False):
         # Only one client can request accounts at a time
         request_lock.acquire()
 
-        not_banned = Account.banned.is_null(True) | Account.banned == False
-        not_shadowbanned = Account.shadowbanned.is_null(True) | Account.shadowbanned == False
-        query = Account.select().where(Account.system_id.is_null(True) & not_banned & not_shadowbanned)
+        not_banned = Account.banned.is_null(True) | (Account.banned == False)
+        not_shadowbanned = Account.shadowbanned.is_null(True) | (Account.shadowbanned == False)
 
-        # Additional conditions
-        if min_level > 1:
-            query = query.where(Account.level >= min_level)
-        # TODO: Add filter for nearby location
-
-        # Limitations and order
-        query = query.limit(count).order_by(Account.last_modified)
+        queries = []
+        if include_already_assigned:
+            # Look for good accounts for same system_id
+            queries.append(Account.select().where((Account.system_id == system_id) & not_banned & not_shadowbanned))
+        # Look for good accounts that are unused
+        queries.append(Account.select().where(Account.system_id.is_null(True) & not_banned & not_shadowbanned))
 
         accounts = []
-        for account in query:
-            account.system_id = system_id
-            account.last_modified = datetime.now()
-            account.save()
-            new_account_event(account, "Got assigned to [{}]".format(system_id))
-            data = model_to_dict(account)
-            accounts.append({
-                'auth_service': data.get('auth_service'),
-                'username': data.get('username'),
-                'password': data.get('password'),
-                'latitude': data.get('latitude'),
-                'longitude': data.get('longitude'),
-                'rareless_scans': data.get('rareless_scans'),
-                'shadowbanned': data.get('shadowbanned'),
-                'last_modified': data.get('last_modified')
-            })
+        for query in queries:
+            if count > 0:
+                # Additional conditions
+                if min_level > 1:
+                    query = query.where(Account.level >= min_level)
+                if max_level < 40:
+                    query = query.where(Account.level <= max_level)
+                # TODO: Add filter for nearby location
+
+                # Limitations and order
+                query = query.limit(count).order_by(Account.last_modified)
+
+                for account in query:
+                    old_system_id = account.system_id
+                    account.system_id = system_id
+                    account.last_modified = datetime.now()
+                    account.save()
+                    if old_system_id != system_id:
+                        new_account_event(account, "Got assigned to [{}]".format(system_id))
+                    data = model_to_dict(account)
+                    accounts.append({
+                        'auth_service': data.get('auth_service'),
+                        'username': data.get('username'),
+                        'password': data.get('password'),
+                        'latitude': data.get('latitude'),
+                        'longitude': data.get('longitude'),
+                        'rareless_scans': data.get('rareless_scans'),
+                        'shadowbanned': data.get('shadowbanned'),
+                        'last_modified': data.get('last_modified')
+                    })
+                    count -= 1
 
         request_lock.release()
         return accounts
@@ -255,8 +268,7 @@ def update_account(data, db):
             acc, created = Account.get_or_create(username=data['username'])
             acc_previous = copy.deepcopy(acc)
             for key, value in data.items():
-                if value is not None:
-                    setattr(acc, key, value)
+                setattr(acc, key, value)
             acc.last_modified = datetime.now()
             eval_acc_state_changes(acc_previous, acc)
             acc.save()

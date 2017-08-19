@@ -10,6 +10,7 @@ from pgpool.config import cfg_get
 from pgpool.models import init_database, db_updater, Account, db_cleanup
 
 # ---------------------------------------------------------------------------
+from pgpool.utils import parse_bool
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -39,16 +40,19 @@ def get_accounts():
 
     count = int(request.args.get('count', 1))
     min_level = int(request.args.get('min_level', 1))
+    max_level = int(request.args.get('max_level', 40))
     lat = request.args.get('latitude')
     lat = float(lat) if lat else lat
     lng = request.args.get('longitude')
     lng = float(lng) if lng else lng
+    include_already_assigned = parse_bool(request.args.get('include_already_assigned'))
     log.info(
-        "System ID [{}] requested {} accounts min level {} from {}".format(system_id, count, min_level, request.remote_addr))
-    accounts = Account.get_unused(system_id, count, min_level, lat, lng)
+        "System ID [{}] requested {} accounts level {}-{} from {}".format(system_id, count, min_level, max_level,
+                                                                          request.remote_addr))
+    accounts = Account.get_accounts(system_id, count, min_level, max_level, lat, lng, include_already_assigned)
     if len(accounts) < count:
         log.warning("Could only deliver {} accounts.".format(len(accounts)))
-    return jsonify(accounts)
+    return jsonify(accounts[0] if accounts and count == 1 else accounts)
 
 
 @app.route('/account/release', methods=['POST'])
@@ -56,9 +60,10 @@ def release_accounts():
     data = json.loads(request.data)
     if isinstance(data, list):
         for update in data:
-            update.system_id = None
+            update['system_id'] = None
             db_updates_queue.put(update)
     else:
+        data['system_id'] = None
         db_updates_queue.put(data)
     return 'ok'
 
