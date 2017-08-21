@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import abort
 
 from pgpool.config import cfg_get
-from pgpool.models import init_database, db_updater, Account, db_cleanup
+from pgpool.models import init_database, db_updater, Account, auto_release
 
 # ---------------------------------------------------------------------------
 from pgpool.utils import parse_bool
@@ -110,6 +110,8 @@ def run_server():
 
 # ---------------------------------------------------------------------------
 
+log.info("PGPool starting up...")
+
 db = init_database(app)
 
 # DB Updates
@@ -120,9 +122,13 @@ t = Thread(target=db_updater, name='db-updater',
 t.daemon = True
 t.start()
 
-t = Thread(target=db_cleanup, name='db-cleanup')
-t.daemon = True
-t.start()
+if cfg_get('account_release_timeout') > 0:
+    log.info(
+        "Starting auto-release thread releasing accounts every {} minutes.".format(cfg_get('account_release_timeout')))
+    t = Thread(target=auto_release, name='auto-release')
+    t.daemon = True
+    t.start()
+else:
+    log.info("Account auto-releasing DISABLED.")
 
-log.info("PGPool starting up...")
 run_server()

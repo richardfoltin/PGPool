@@ -26,6 +26,9 @@ parser = configargparse.ArgParser()
 parser.add_argument('-c', '--config',
                     help=('Specify different config file. Default: config.json'),
                     default='config.json')
+parser.add_argument('-i', '--import-csv',
+                    help=('Filename of a CSV file to import accounts from.'),
+                    default=None)
 args = parser.parse_args()
 
 with open(args.config, 'r') as f:

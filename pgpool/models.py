@@ -28,7 +28,7 @@ class Account(flaskDb.Model):
     username = CharField(primary_key=True)
     password = CharField(null=True)
     email = CharField(null=True)
-    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+    last_modified = DateTimeField(index=True, default=datetime.now)
     system_id = CharField(index=True, null=True)  # system which uses the account
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
@@ -223,7 +223,7 @@ def cmp_bool(b1, b2):
         return None
 
 
-def eval_acc_state_changes(acc_prev, acc_curr):
+def eval_acc_state_changes(acc_prev, acc_curr, metadata):
     level_prev = acc_prev.level
     level_curr = acc_curr.level
     if level_prev is not None and level_curr is not None and level_prev < level_curr:
@@ -254,7 +254,9 @@ def eval_acc_state_changes(acc_prev, acc_curr):
                                                                                             "CAPTCHA solved :-)")
 
     if acc_prev.system_id is not None and acc_curr.system_id is None:
-        new_account_event(acc_curr, "Got released from [{}]".format(acc_prev.system_id))
+        new_account_event(acc_curr, "Got released from [{}]: {}".format(acc_prev.system_id,
+                                                                        metadata.get('_release_reason',
+                                                                                     'unknown reason')))
 
         # if acc_prev.rareless_scans == 0 and acc_curr.rareless_scans > 0:
         #     new_account_event(acc_curr, "Started seeing only commons :-/")
@@ -267,10 +269,14 @@ def update_account(data, db):
         try:
             acc, created = Account.get_or_create(username=data['username'])
             acc_previous = copy.deepcopy(acc)
+            metadata = {}
             for key, value in data.items():
-                setattr(acc, key, value)
+                if not key.startswith('_'):
+                    setattr(acc, key, value)
+                else:
+                    metadata[key] = value
             acc.last_modified = datetime.now()
-            eval_acc_state_changes(acc_previous, acc)
+            eval_acc_state_changes(acc_previous, acc, metadata)
             acc.save()
             log.info("Processed update for {}".format(acc.username))
         except Exception as e:
@@ -290,7 +296,7 @@ def update_account(data, db):
                 time.sleep(1)
 
 
-def db_cleanup():
+def auto_release():
     release_timeout = cfg_get('account_release_timeout')
     while True:
         try:
