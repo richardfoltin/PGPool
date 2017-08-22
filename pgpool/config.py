@@ -29,6 +29,9 @@ parser.add_argument('-c', '--config',
 parser.add_argument('-i', '--import-csv',
                     help=('Filename of a CSV file to import accounts from.'),
                     default=None)
+parser.add_argument('-l', '--level',
+                    help=('Trainer level of imported accounts.'),
+                    type=int, default=None)
 args = parser.parse_args()
 
 with open(args.config, 'r') as f:

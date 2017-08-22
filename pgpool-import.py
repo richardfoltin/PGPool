@@ -149,6 +149,8 @@ if not os.path.isfile(filename):
 read_csv(filename)
 log.info("Found {} accounts in file {}.".format(num_accounts, filename))
 
+forced_level = args.level
+
 num_skipped = 0
 num_imported = 0
 
@@ -161,8 +163,10 @@ for i in range(0, num_accounts):
     if created:
         acc.auth_service = auth_service
         acc.password = password
+        acc.level = forced_level
         acc.save()
-        log.info("Added new account {} to pool.".format(username))
+        addl_logmsg = " Set to level {}.".format(forced_level) if forced_level else ""
+        log.info("Added new account {} to pool.{}".format(username, addl_logmsg))
         num_imported += 1
     else:
         log.info("Account {} already known. Skipping.".format(username))
