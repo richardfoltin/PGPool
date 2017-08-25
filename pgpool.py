@@ -41,15 +41,16 @@ def get_accounts():
     count = int(request.args.get('count', 1))
     min_level = int(request.args.get('min_level', 1))
     max_level = int(request.args.get('max_level', 40))
-    lat = request.args.get('latitude')
-    lat = float(lat) if lat else lat
-    lng = request.args.get('longitude')
-    lng = float(lng) if lng else lng
     include_already_assigned = parse_bool(request.args.get('include_already_assigned'))
+    banned_or_new = parse_bool(request.args.get('banned_or_new'))
+    # lat = request.args.get('latitude')
+    # lat = float(lat) if lat else lat
+    # lng = request.args.get('longitude')
+    # lng = float(lng) if lng else lng
     log.info(
         "System ID [{}] requested {} accounts level {}-{} from {}".format(system_id, count, min_level, max_level,
                                                                           request.remote_addr))
-    accounts = Account.get_accounts(system_id, count, min_level, max_level, lat, lng, include_already_assigned)
+    accounts = Account.get_accounts(system_id, count, min_level, max_level, include_already_assigned, banned_or_new)
     if len(accounts) < count:
         log.warning("Could only deliver {} accounts.".format(len(accounts)))
     return jsonify(accounts[0] if accounts and count == 1 else accounts)
@@ -78,31 +79,6 @@ def accounts_update():
     else:
         db_updates_queue.put(data)
     return 'ok'
-
-
-# @app.route('/account/csvimport', methods=['POST'])
-# def import_csv_accounts():
-#     log.debug("new_accounts request received from {}.".format(request.remote_addr))
-#     num_accounts = 0
-#     for file_id in request.files:
-#         file = request.files[file_id]
-#         content = file.read()
-#         file.close()
-#         for line in content.splitlines():
-#             fields = line.split(",")
-#             fields = map(str.strip, fields)
-#             auth_service = fields[0]
-#             username = fields[1]
-#             password = fields[2]
-#             acc, created = Account.get_or_create(username=username,
-#                                                  defaults={
-#                                                      'auth_service': auth_service,
-#                                                      'password': password
-#                                                  })
-#             if created:
-#                 log.info("Imported new {} account {}".format(auth_service, username))
-#                 num_accounts += 1
-#     return "{} new accounts imported.".format(num_accounts)
 
 
 def run_server():
