@@ -164,6 +164,8 @@ for i in range(0, num_accounts):
         acc.auth_service = auth_service
         acc.password = password
         acc.level = forced_level
+        acc.banned = 0
+        acc.shadowbanned = 0
         acc.save()
         addl_logmsg = " Set to level {}.".format(forced_level) if forced_level else ""
         log.info("Added new account {} to pool.{}".format(username, addl_logmsg))
