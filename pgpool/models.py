@@ -8,7 +8,7 @@ from peewee import DateTimeField, CharField, SmallIntegerField, IntegerField, \
     DoubleField, BooleanField
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
-from playhouse.shortcuts import RetryOperationalError, model_to_dict
+from playhouse.shortcuts import RetryOperationalError
 
 from pgpool.config import cfg_get
 
@@ -127,23 +127,25 @@ class Account(flaskDb.Model):
                 query = query.limit(count).order_by(Account.last_modified)
 
                 for account in query:
+                    accounts.append({
+                        'auth_service': account.auth_service,
+                        'username': account.username,
+                        'password': account.password,
+                        'latitude': account.latitude,
+                        'longitude': account.longitude,
+                        'rareless_scans': account.rareless_scans,
+                        'shadowbanned': account.shadowbanned,
+                        'last_modified': account.last_modified
+                    })
+
                     old_system_id = account.system_id
                     account.system_id = system_id
                     account.last_modified = datetime.now()
                     account.save()
+
                     if old_system_id != system_id:
                         new_account_event(account, "Got assigned to [{}]".format(system_id))
-                    data = model_to_dict(account)
-                    accounts.append({
-                        'auth_service': data.get('auth_service'),
-                        'username': data.get('username'),
-                        'password': data.get('password'),
-                        'latitude': data.get('latitude'),
-                        'longitude': data.get('longitude'),
-                        'rareless_scans': data.get('rareless_scans'),
-                        'shadowbanned': data.get('shadowbanned'),
-                        'last_modified': data.get('last_modified')
-                    })
+
                     count -= 1
 
         request_lock.release()
