@@ -95,19 +95,19 @@ class Account(flaskDb.Model):
     #     }
 
     @staticmethod
-    def get_accounts(system_id, count=1, min_level=1, max_level=40, include_already_assigned=False, banned_or_new=False):
+    def get_accounts(system_id, count=1, min_level=1, max_level=40, reuse=False, banned_or_new=False):
         # Only one client can request accounts at a time
         request_lock.acquire()
 
         main_condition = None
         if banned_or_new:
             main_condition = Account.banned.is_null(True) | (Account.banned == True) | (Account.shadowbanned == True)
-            include_already_assigned = False
+            reuse = False
         else:
             main_condition = (Account.banned == False) & (Account.shadowbanned == False)
 
         queries = []
-        if include_already_assigned:
+        if reuse:
             # Look for good accounts for same system_id
             queries.append(Account.select().where((Account.system_id == system_id) & main_condition))
         # Look for good accounts that are unused
