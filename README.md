@@ -61,7 +61,7 @@ Parameter | Required | Default | Description
 `count` | no | 1 | The number of accounts to request
 `min_level` | no | 1 | Minimum number of trainer level being requested. If you want reliable IV encounter data your accounts should be at least level 30
 `max_level` | no | 40 | Maximum number of trainer level. Maybe you want to reserve level 30 accounts for other tools.
-`include_already_assigned` | no | false | If set to yes the client will also receive good accounts that were previously assigned to the given `system_id`. Useful on client startup to reuse accounts.
+`reuse` | no | false | If set to yes the client will also receive good accounts that were previously assigned to the given `system_id`. Useful on client startup to reuse accounts.
 
 Returns a JSON object or a list of JSON objects representing accounts. These records do not contain every account detail because the client usually logs in to the accounts and get these details directly from the POGO servers:
 ```
@@ -126,6 +126,7 @@ Same as updating accounts (they get updated when they are being released) but th
 
 # Setting up 3rd Party Apps
 
+## General MrMime Support
 In your application that utilizes the [MrMime pgoapi wrapper library](https://github.com/sLoPPydrive/MrMime) and that should be linked to PGPool to update account details create or edit `mrmime_config.json` and set at least the following options:
 
 ```
@@ -152,16 +153,24 @@ Other options are possible, their default values are:
 * `pgpool_update_interval`: Update account details in PGPool after next API call if this many seconds have passed.
 
 
-## Special Case: RocketMap
+## RocketMap
 
-I integrated PGPool into my own [RocketMap fork (branch MIX_SCYTHER)](https://github.com/sLoPPydrive/RocketMap/tree/MIX_SCYTHER) which fully uses all features of PGPool. To use it, download my fork and set the following config parameter:
+PGPool is fully integrated into my own [RocketMap fork (branch MIX_SCYTHER)](https://github.com/sLoPPydrive/RocketMap/tree/MIX_SCYTHER). To use it, download my fork and set the following config parameter:
 ```
   --pgpool-url <url>
 ```
 Now specifying accounts or CSV files will be ignored. Only the number of `--workers` has to be set. RocketMap also automatically sets the `system_id` for PGPool to the RocketMap `status_name`, so you don't have to worry about that either.
 
-Note that RocketMap-PGPool-support for high-level accounts is not yet done. Use [PGScout](https://github.com/sLoPPydrive/PGScout) instead to scan for IV/CP/moves.
+## PGScout
 
-## Special Case: PGNumbra
+PGPool is fully integrated into [PGScout](https://github.com/sLoPPydrive/PGScout). To use it, set the following config parameters (on command line or `config.ini`):
+```
+  --pgpool-url <url>
+  --pgpool-system-id <system-id>
+  --pgpool-num-accounts <num>
+```
+Besides configuring the URL and system ID you need to set the number of accounts PGScout should request from PGPool.
 
-PGNumbra uses MrMime, so it works with PGPool out of the box. The difference is that PGNumbras `shadowcheck.py` tool never sets a `system_id` because checked accounts are instantly released after being checked.
+## PGNumbra
+
+PGNumbra uses MrMime, so it works with PGPool out of the box. The difference is that PGNumbras `shadowcheck.py` tool sets an automatic `system_id` which is `pgnumbra_` followed by its process ID. Checked accounts are instantly released after being checked.
