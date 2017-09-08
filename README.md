@@ -155,11 +155,13 @@ Other options are possible, their default values are:
 
 ## RocketMap
 
-PGPool is fully integrated into my own [RocketMap fork (branch MIX_SCYTHER)](https://github.com/sLoPPydrive/RocketMap/tree/MIX_SCYTHER). To use it, download my fork and set the following config parameter:
+PGPool is fully integrated into my own [RocketMap fork (branch MIX_SCYTHER)](https://github.com/sLoPPydrive/RocketMap/tree/MIX_SCYTHER). To use it, download my fork and set the following config parameters:
 ```
   --pgpool-url <url>
+  --workers <number of regular workers lvl 1-29>
+  --highlvl-workers <optional number of lvl 30+ accounts for encounters>
 ```
-Now specifying accounts or CSV files will be ignored. Only the number of `--workers` has to be set. RocketMap also automatically sets the `system_id` for PGPool to the RocketMap `status_name`, so you don't have to worry about that either.
+Now specifying accounts or CSV files will be ignored. Only the number of `--workers` has to be set (`--highlvl-workers` is optional). RocketMap also automatically sets the `system_id` for PGPool to the RocketMap `status_name`, so you don't have to worry about that either.
 
 ## PGScout
 
@@ -169,7 +171,7 @@ PGPool is fully integrated into [PGScout](https://github.com/sLoPPydrive/PGScout
   --pgpool-system-id <system-id>
   --pgpool-num-accounts <num>
 ```
-Besides configuring the URL and system ID you need to set the number of accounts PGScout should request from PGPool.
+Besides configuring the URL and system ID you need to set the number of accounts PGScout should request from PGPool. PGScout by default automatically requests accounts with minimum level 30. 
 
 ## PGNumbra
 
