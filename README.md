@@ -1,3 +1,5 @@
+pgpool-import.py -i AccountsLV30.csv -l 30
+
 # PGPool
 A simple webservice for account management.
 

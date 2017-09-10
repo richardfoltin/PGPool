@@ -4,6 +4,7 @@
 config.json
 pokemon_moveset_grades.json
 *.log
-accounts-info.txt
+*.txt
 build
 dist
+
