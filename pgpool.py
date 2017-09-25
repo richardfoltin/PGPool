@@ -82,7 +82,7 @@ def accounts_update():
 
 
 def run_server():
-    app.run(threaded=True, port=cfg_get('port'))
+    app.run(threaded=True, host=cfg_get('host'), port=cfg_get('port'))
 
 # ---------------------------------------------------------------------------
 
