@@ -58,6 +58,7 @@ class Account(flaskDb.Model):
     pokemon = SmallIntegerField(null=True)
     eggs = SmallIntegerField(null=True)
     incubators = SmallIntegerField(null=True)
+    lures = SmallIntegerField(null=True)
 
     # @staticmethod
     # def db_format(data):
