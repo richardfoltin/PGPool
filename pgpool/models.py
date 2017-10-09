@@ -136,7 +136,8 @@ class Account(flaskDb.Model):
                         'longitude': account.longitude,
                         'rareless_scans': account.rareless_scans,
                         'shadowbanned': account.shadowbanned,
-                        'last_modified': account.last_modified
+                        'last_modified': account.last_modified,
+                        'lures': account.lures
                     })
 
                     old_system_id = account.system_id
