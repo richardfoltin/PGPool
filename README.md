@@ -16,9 +16,10 @@ PGPool was designed to allow continuous execution of other tools that need to sw
 # Support the Author [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/slop)
 If you like PGPool (or my other tools) and feel the need to thank me, just drop me one or more **level 30 accounts** or buy me a **[PokeHash key](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)**. Seriously, that would be so awesome! :-D You can find me on various Pokémon related Discords as "sLoPPydrive".
 
+# Get Help
+Come join the official **[PGTools Discord Server](https://discord.gg/Vwe5mTa)** for [PGScout](https://github.com/sLoPPydrive/PGScout), [PGNumbra](https://github.com/sLoPPydrive/PGNumbra), [PGPool](https://github.com/sLoPPydrive/PGPool) and the PGTools [RocketMap](https://github.com/sLoPPydrive/RocketMap) and [PokeAlarm](https://github.com/sLoPPydrive/PokeAlarm) forks to get help or just hang around. You are very welcome. :)
 
 # Quick Start
-
 _Again, be aware that PGPool currently only makes sense if you use any product using the [MrMime pgoapi wrapper library](https://github.com/sLoPPydrive/MrMime) (e.g. PGScout, PGNumbra, my RocketMap branch MIX_SCYTHER)._
 
 The only thing you need is a MySQL database set up and the usual `pip install -r requirements.txt`.
@@ -49,7 +50,6 @@ The format of the CSV file should be one (and **only** one, don't mix them up!) 
 
 
 # API
-
 Let's assume PGPool runs at the default URL `http://localhost:4242`. Then the following requests are possible:
 
 ## Requesting Accounts
@@ -127,7 +127,6 @@ Attribute | Description
 Same as updating accounts (they get updated when they are being released) but the `system_id` is also set to **NULL**.
 
 # Setting up 3rd Party Apps
-
 ## General MrMime Support
 In your application that utilizes the [MrMime pgoapi wrapper library](https://github.com/sLoPPydrive/MrMime) and that should be linked to PGPool to update account details create or edit `mrmime_config.json` and set at least the following options:
 
