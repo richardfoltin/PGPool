@@ -8,3 +8,5 @@ pokemon_moveset_grades.json
 build
 dist
 
+*.json
+*.bat
