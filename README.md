@@ -64,6 +64,7 @@ Parameter | Required | Default | Description
 `min_level` | no | 1 | Minimum number of trainer level being requested. If you want reliable IV encounter data your accounts should be at least level 30
 `max_level` | no | 40 | Maximum number of trainer level. Maybe you want to reserve level 30 accounts for other tools.
 `reuse` | no | false | If set to yes the client will also receive good accounts that were previously assigned to the given `system_id`. Useful on client startup to reuse accounts.
+`banned_or_new` | no | false | If set to `true` only banned/shadowbanned and new accounts with unknown status will be returned.
 
 Returns a JSON object or a list of JSON objects representing accounts. These records do not contain every account detail because the client usually logs in to the accounts and get these details directly from the POGO servers:
 ```
