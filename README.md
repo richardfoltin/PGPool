@@ -36,7 +36,9 @@ Some words about the non-obvious options in `config.json`:
 
 ## Importing Accounts
 
-With PGPool comes a tool called `pgpool-import.py` which takes a CSV file and creates new account records in the database. These accounts don't have any account details yet (most important ban/shadowban status), so they won't get picked if a client requests any accounts. For them to become *active* you need to check them first, e.g. by running [PGNumbra Tools](https://github.com/sLoPPydrive/PGNumbra) on them. Commandline options of `pgpool-import.py` are:
+The preferred way to load new accounts into PGPool is to **put them in a CSV file** and let [PGNumbra](https://github.com/sLoPPydrive/PGNumbra) run with `--accounts-file` and `--pgpool-url`. This checks and adds them to PGPool in one run. If you chose a **location near a Pokestop** they will also be at least **level 2** after that.
+
+Alternatively: With PGPool comes a tool called `pgpool-import.py` which takes a CSV file and creates new account records in the database. These accounts don't have any account details yet (most important ban/shadowban status), so they won't get picked if a client requests any accounts. For them to become *active* you need to check them first, e.g. by running [PGNumbra Tools](https://github.com/sLoPPydrive/PGNumbra) on them. Commandline options of `pgpool-import.py` are:
 ```
   -i IMPORT_CSV, --import-csv IMPORT_CSV
              Filename of a CSV file to import accounts from.

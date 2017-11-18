@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import abort
 
 from pgpool.config import cfg_get
+from pgpool.console import print_status
 from pgpool.models import init_database, db_updater, Account, auto_release
 
 # ---------------------------------------------------------------------------
@@ -106,5 +107,11 @@ if cfg_get('account_release_timeout') > 0:
     t.start()
 else:
     log.info("Account auto-releasing DISABLED.")
+
+# Start thread to print current status and get user input.
+t = Thread(target=print_status,
+           name='status_printer', args=('logs',))
+t.daemon = True
+t.start()
 
 run_server()

@@ -1,3 +1,4 @@
+psutil
 peewee==2.8.1
 flask
 configargparse
