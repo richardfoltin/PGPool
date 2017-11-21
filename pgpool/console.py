@@ -73,34 +73,40 @@ def print_status(initial_display):
 def print_stats(lines):
     lines.append("Mem Usage: {}".format(rss_mem_size()))
 
-    total = Account.select(fn.COUNT(Account.username)).scalar()
-    lines.append("Total Accounts: {}\n".format(total))
+    try:
+        total = Account.select(fn.COUNT(Account.username)).scalar()
+        lines.append("Total Accounts: {}\n".format(total))
 
-    lines.append("Condition     | L1-29   | L30+    | TOTAL")
+        lines.append("Condition     | L1-29   | L30+    | unknown | TOTAL")
 
-    print_stats_line(lines, "ALL", "1")
-    print_stats_line(lines, "Unknown / New", "email is null")
-    print_stats_line(lines, "In Use", "system_id is not null")
-    print_stats_line(lines, "Good", "banned = 0 and shadowbanned = 0")
-    print_stats_line(lines, "Blind", "banned = 0 and shadowbanned = 1")
-    print_stats_line(lines, "Banned", "banned = 1 and shadowbanned = 0")
-    print_stats_line(lines, "Captcha", "captcha = 1")
+        print_stats_line(lines, "ALL", "1")
+        print_stats_line(lines, "Unknown / New", "level is null")
+        print_stats_line(lines, "In Use", "system_id is not null")
+        print_stats_line(lines, "Good", "banned = 0 and shadowbanned = 0")
+        print_stats_line(lines, "Only Blind", "banned = 0 and shadowbanned = 1")
+        print_stats_line(lines, "Banned", "banned = 1")
+        print_stats_line(lines, "Captcha", "captcha = 1")
+    except Exception as e:
+        lines.append("Exception: {}".format(e))
 
 
 def print_stats_line(lines, name, condition):
     cursor = flaskDb.database.execute_sql('''
-        select (case when (level < 30) then "low" else "high" end) as category, count(*) from account
+        select (case when level < 30 then "low" when level >= 30 then "high" else "unknown" end) as category, count(*) from account
         where {}
         group by category
     '''.format(condition))
     low = 0
     high = 0
+    unknown = 0
     for row in cursor.fetchall():
         if row[0] == 'low':
             low = row[1]
         elif row[0] == 'high':
             high = row[1]
-    lines.append("{:<13} | {:>7} | {:>7} | {:>7}".format(name, low, high, low + high))
+        elif row[0] == 'unknown':
+            unknown = row[1]
+    lines.append("{:<13} | {:>7} | {:>7} | {:>7} | {:>7}".format(name, low, high, unknown, low + high + unknown))
 
 
 def print_lines(lines, print_entity, entities, addl_lines, state):
