@@ -25,3 +25,14 @@ def rss_mem_size():
         unit = 'GB'
         mem /= 1024
     return "{:>4.1f} {}".format(mem, unit)
+
+
+def cmp_bool(b1, b2):
+    if b1 is None or b2 is None:
+        return None
+    if not b1 and b2:
+        return True
+    elif b1 and not b2:
+        return False
+    else:
+        return None

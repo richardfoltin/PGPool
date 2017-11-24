@@ -5,12 +5,14 @@ from datetime import datetime, timedelta
 from threading import Lock
 
 from peewee import DateTimeField, CharField, SmallIntegerField, IntegerField, \
-    DoubleField, BooleanField
+    DoubleField, BooleanField, InsertQuery
 from playhouse.flask_utils import FlaskDB
+from playhouse.migrate import migrate, MySQLMigrator
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
 
 from pgpool.config import cfg_get
+from pgpool.utils import cmp_bool
 
 log = logging.getLogger(__name__)
 
@@ -18,18 +20,34 @@ flaskDb = FlaskDB()
 
 request_lock = Lock()
 
+db_schema_version = 2
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
 
 
+# Reduction of CharField to fit max length inside 767 bytes for utf8mb4 charset
+class Utf8mb4CharField(CharField):
+    def __init__(self, max_length=191, *args, **kwargs):
+        self.max_length = max_length
+        super(CharField, self).__init__(*args, **kwargs)
+
+
+class Version(flaskDb.Model):
+    key = Utf8mb4CharField()
+    val = SmallIntegerField()
+
+    class Meta:
+        primary_key = False
+
+
 class Account(flaskDb.Model):
-    auth_service = CharField(max_length=6, default='ptc')
-    username = CharField(primary_key=True)
-    password = CharField(null=True)
-    email = CharField(null=True)
+    auth_service = Utf8mb4CharField(max_length=6, default='ptc')
+    username = Utf8mb4CharField(primary_key=True)
+    password = Utf8mb4CharField(null=True)
+    email = Utf8mb4CharField(null=True)
     last_modified = DateTimeField(index=True, default=datetime.now)
-    system_id = CharField(index=True, null=True)  # system which uses the account
+    system_id = Utf8mb4CharField(max_length=64, index=True, null=True)  # system which uses the account
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
     # from player_stats
@@ -41,14 +59,14 @@ class Account(flaskDb.Model):
     spins = IntegerField(null=True)
     walked = DoubleField(null=True)
     # from get_inbox
-    team = CharField(max_length=16, null=True)
+    team = Utf8mb4CharField(max_length=16, null=True)
     coins = IntegerField(null=True)
     stardust = IntegerField(null=True)
     # account health
     warn = BooleanField(null=True)
     banned = BooleanField(index=True, null=True)
     ban_flag = BooleanField(null=True)
-    tutorial_state = CharField(null=True)  # a CSV-list of tutorial steps completed
+    tutorial_state = Utf8mb4CharField(null=True)  # a CSV-list of tutorial steps completed
     captcha = BooleanField(index=True, null=True)
     rareless_scans = IntegerField(index=True, null=True)
     shadowbanned = BooleanField(index=True, null=True)
@@ -59,41 +77,6 @@ class Account(flaskDb.Model):
     eggs = SmallIntegerField(null=True)
     incubators = SmallIntegerField(null=True)
     lures = SmallIntegerField(null=True)
-
-    # @staticmethod
-    # def db_format(data):
-    #     return {
-    #         'auth_service': data.get('auth_service'),
-    #         'username': data.get('username'),
-    #         'password': data.get('password'),
-    #         'email': data.get('email'),
-    #         'last_modified': datetime.utcnow(),
-    #         'system_id': data.get('system_id'),
-    #         'latitude': data.get('latitude'),
-    #         'longitude': data.get('longitude'),
-    #         'level': data.get('level'),
-    #         'xp': data.get('xp'),
-    #         'encounters': data.get('encounters'),
-    #         'balls_thrown': data.get('balls_thrown'),
-    #         'captures': data.get('captures'),
-    #         'spins': data.get('spins'),
-    #         'walked': data.get('walked'),
-    #         'team': data.get('team'),
-    #         'coins': data.get('coins'),
-    #         'stardust': data.get('stardust'),
-    #         'warn': data.get('warn'),
-    #         'banned': data.get('banned'),
-    #         'ban_flag': data.get('ban_flag'),
-    #         'tutorial_state': data.get('tutorial_state'),
-    #         'captcha': data.get('captcha'),
-    #         'rareless_scans': data.get('rareless_scans'),
-    #         'shadowbanned': data.get('shadowbanned'),
-    #         'balls': data.get('balls'),
-    #         'total_items': data.get('total_items'),
-    #         'pokemon': data.get('pokemon'),
-    #         'eggs': data.get('eggs'),
-    #         'incubators': data.get('incubators')
-    #     }
 
     @staticmethod
     def get_accounts(system_id, count=1, min_level=1, max_level=40, reuse=False, banned_or_new=False):
@@ -156,9 +139,9 @@ class Account(flaskDb.Model):
 
 class Event(flaskDb.Model):
     timestamp = DateTimeField(default=datetime.now, index=True)
-    type = CharField(max_length=16)
-    entity_id = CharField(index=True)
-    description = CharField()
+    entity_type = Utf8mb4CharField(max_length=16)
+    entity_id = Utf8mb4CharField(index=True)
+    description = Utf8mb4CharField()
 
 
 # ===========================================================================
@@ -175,11 +158,96 @@ def init_database(app):
         port=cfg_get('db_port'),
         max_connections=cfg_get('db_max_connections'),
         stale_timeout=300,
-        charset='utf8')
+        charset='utf8mb4')
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
-    create_tables(db)
+    db.connect()
+
+    # First of all, fix database encoding
+    verify_table_encoding(db)
+
+    if not Account.table_exists():
+        create_tables(db)
+        InsertQuery(Version, {Version.key: 'schema_version',
+                              Version.val: db_schema_version}).execute()
+        old_schema_version = db_schema_version
+    elif not Version.table_exists():
+        old_schema_version = 1
+    else:
+        old_schema_version = Version.get(Version.key == 'schema_version').val
+    if old_schema_version < db_schema_version:
+        migrate_database(db, 1)
     return db
+
+
+def verify_table_encoding(db):
+    with db.execution_context():
+        cmd_sql = '''
+            SELECT table_name FROM information_schema.tables WHERE
+            table_collation != "utf8mb4_unicode_ci"
+            AND table_schema = "{}";
+            '''.format(cfg_get('db_name'))
+        change_tables = db.execute_sql(cmd_sql)
+
+        if change_tables.rowcount > 0:
+            log.info('Changing collation and charset on database.')
+            cmd_sql = "ALTER DATABASE {} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci".format(cfg_get('db_name'))
+            db.execute_sql(cmd_sql)
+
+            log.info('Changing collation and charset on {} tables.'.format(change_tables.rowcount))
+            db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
+            for table in change_tables:
+                log.debug('Changing collation and charset on table {}.'.format(table[0]))
+                cmd_sql = '''ALTER TABLE {} CONVERT TO CHARACTER SET utf8mb4
+                            COLLATE utf8mb4_unicode_ci;'''.format(str(table[0]))
+                db.execute_sql(cmd_sql)
+            db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
+
+
+def migrate_database(db, old_ver):
+    log.info('Detected database version {}, updating to {}...'.format(old_ver, db_schema_version))
+    migrator = MySQLMigrator(db)
+
+    if old_ver < 2:
+        migrate_varchar_columns(db, Account.username, Account.password, Account.email, Account.system_id,
+                                Account.tutorial_state)
+        migrate_varchar_columns(db, Event.entity_id, Event.description)
+
+        db.create_table(Version)
+        InsertQuery(Version, {Version.key: 'schema_version',
+                              Version.val: 1}).execute()
+
+        migrate(
+            migrator.add_column('account', 'lures',
+                                SmallIntegerField(null=True)),
+            migrator.rename_column('event', 'type', 'entity_type')
+        )
+
+    Version.update(val=db_schema_version).where(
+        Version.key == 'schema_version').execute()
+    log.info("Done migrating database.")
+
+
+def migrate_varchar_columns(db, *fields):
+    stmts = []
+    cols = []
+    table = None
+    for field in fields:
+        if isinstance(field, Utf8mb4CharField):
+            if table == None:
+                table = field.model_class._meta.db_table
+            elif table != field.model_class._meta.db_table:
+                log.error("Can only migrate varchar columns of same table: {} vs. {}".format(table,
+                                                                                             field.model_class._meta.db_table))
+            column = field.db_column
+            cols.append(column)
+            max_length = field.max_length
+            stmt = "CHANGE COLUMN {} {} VARCHAR({}) ".format(column, column, max_length)
+            stmt += "DEFAULT NULL" if field.null else "NOT NULL"
+            stmts.append(stmt)
+
+    log.info("Converting VARCHAR columns {} on table {}".format(', '.join(cols), table))
+    db.execute_sql("ALTER TABLE {} {};".format(table, ', '.join(stmts)))
 
 
 def db_updater(q, db):
@@ -215,20 +283,9 @@ def db_updater(q, db):
 
 
 def new_account_event(acc, description):
-    evt = Event(type='account', entity_id=acc.username, description=description)
+    evt = Event(entity_type='account', entity_id=acc.username, description=description)
     evt.save()
     log.info("Event for account {}: {}".format(acc.username, description))
-
-
-def cmp_bool(b1, b2):
-    if b1 is None or b2 is None:
-        return None
-    if not b1 and b2:
-        return True
-    elif b1 and not b2:
-        return False
-    else:
-        return None
 
 
 def eval_acc_state_changes(acc_prev, acc_curr, metadata):
@@ -327,6 +384,7 @@ def auto_release():
 
 def create_tables(db):
     db.connect()
+
     tables = [Account, Event]
     for table in tables:
         if not table.table_exists():
