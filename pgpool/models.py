@@ -163,9 +163,6 @@ def init_database(app):
     flaskDb.init_app(app)
     db.connect()
 
-    # First of all, fix database encoding
-    verify_table_encoding(db)
-
     if not Account.table_exists():
         create_tables(db)
         InsertQuery(Version, {Version.key: 'schema_version',
@@ -177,6 +174,10 @@ def init_database(app):
         old_schema_version = Version.get(Version.key == 'schema_version').val
     if old_schema_version < db_schema_version:
         migrate_database(db, 1)
+
+    # Last, fix database encoding
+    verify_table_encoding(db)
+
     return db
 
 
