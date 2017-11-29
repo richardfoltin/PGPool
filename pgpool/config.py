@@ -13,7 +13,9 @@ cfg = {
     'db_user': '',
     'db_pass': '',
     'db_max_connections': 20,
-    'account_release_timeout': 120      # Accounts are being released automatically after this many minutes from last update
+    'log_updates': True,
+    'account_release_timeout': 120,     # Accounts are being released automatically after this many minutes from last update
+    'max_queue_size': 50                # Block update requests if queue already has this many items
 }
 
 

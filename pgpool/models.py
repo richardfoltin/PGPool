@@ -173,7 +173,7 @@ def init_database(app):
     else:
         old_schema_version = Version.get(Version.key == 'schema_version').val
     if old_schema_version < db_schema_version:
-        migrate_database(db, 1)
+        migrate_database(db, old_schema_version)
 
     # Last, fix database encoding
     verify_table_encoding(db)
@@ -273,11 +273,6 @@ def db_updater(q, db):
                 # Helping out the GC.
                 del data
 
-                if q.qsize() > 50:
-                    log.warning(
-                        "DB queue is > 50 (@%d); try increasing --db-threads.",
-                        q.qsize())
-
         except Exception as e:
             log.exception('Exception in db_updater: %s', repr(e))
             time.sleep(5)
@@ -344,7 +339,8 @@ def update_account(data, db):
             acc.last_modified = datetime.now()
             eval_acc_state_changes(acc_previous, acc, metadata)
             acc.save()
-            log.info("Processed update for {}".format(acc.username))
+            if cfg_get('log_updates'):
+                log.info("Processed update for {}".format(acc.username))
         except Exception as e:
             # If there is a DB table constraint error, dump the data and
             # don't retry.
@@ -386,7 +382,7 @@ def auto_release():
 def create_tables(db):
     db.connect()
 
-    tables = [Account, Event]
+    tables = [Account, Event, Version]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)

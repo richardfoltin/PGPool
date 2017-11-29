@@ -15,6 +15,8 @@ from peewee import fn
 from pgpool.models import Account, flaskDb
 from pgpool.utils import rss_mem_size
 
+log = logging.getLogger(__name__)
+
 default_log_level = 0
 
 def input_processor(state):
@@ -28,6 +30,7 @@ def input_processor(state):
         if command == '':
             # Toggle between scouts and log view
             state['display'] = 'stats' if state['display'] == 'logs' else 'logs'
+            log.info("Showing {}".format(state['display']))
 
         # Disable logging if in fullscreen more
         if state['display'] == 'logs':
@@ -36,7 +39,7 @@ def input_processor(state):
             mainlog.setLevel(logging.CRITICAL)
 
 
-def print_status(initial_display):
+def print_status(initial_display, db_updates_queue):
     global status
     global default_log_level
 
@@ -63,20 +66,17 @@ def print_status(initial_display):
         lines = []
 
         if state['display'] == 'stats':
-            print_stats(lines)
+            print_stats(lines, db_updates_queue)
 
         # Print lines
         os.system('cls' if os.name == 'nt' else 'clear')
         print ('\n'.join(lines)).encode('utf-8')
 
 
-def print_stats(lines):
-    lines.append("Mem Usage: {}".format(rss_mem_size()))
+def print_stats(lines, db_updates_queue):
+    lines.append("Mem Usage: {} | DB Queue Size: {}\n".format(rss_mem_size(), db_updates_queue.qsize()))
 
     try:
-        total = Account.select(fn.COUNT(Account.username)).scalar()
-        lines.append("Total Accounts: {}\n".format(total))
-
         lines.append("Condition     | L1-29   | L30+    | unknown | TOTAL")
 
         print_stats_line(lines, "ALL", "1")

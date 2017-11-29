@@ -73,6 +73,11 @@ def release_accounts():
 
 @app.route('/account/update', methods=['POST'])
 def accounts_update():
+    if db_updates_queue.qsize() >= cfg_get('max_queue_size'):
+        msg = "DB update queue full ({} items). Ignoring update.".format(db_updates_queue.qsize())
+        log.warning(msg)
+        return msg, 503
+
     data = json.loads(request.data)
     if isinstance(data, list):
         for update in data:
@@ -110,7 +115,7 @@ else:
 
 # Start thread to print current status and get user input.
 t = Thread(target=print_status,
-           name='status_printer', args=('logs',))
+           name='status_printer', args=('logs', db_updates_queue))
 t.daemon = True
 t.start()
 

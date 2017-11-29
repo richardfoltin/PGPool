@@ -7,5 +7,7 @@
   "db_user": "<DB USER>",
   "db_pass": "<DB PASS>",
   "db_max_connections": 20,
-  "account_release_timeout": 120
+  "log_updates": true,
+  "account_release_timeout": 120,
+  "max_queue_size": 50
 }
