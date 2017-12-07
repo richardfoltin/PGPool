@@ -119,9 +119,11 @@ def print_system_ids_overview(lines):
         if row[0]:
             stats[row[0]] = row[1]
 
-    len_sysid = reduce(lambda l1, l2: max(l1, l2),
-                           map(lambda s: len(s), stats.iterkeys()))
-    len_sysid = str(max(9, len_sysid))
+    len_sysid = 9
+    if stats:
+        max_len_sysid = reduce(lambda l1, l2: max(l1, l2),
+                               map(lambda s: len(s), stats.iterkeys()))
+        len_sysid = str(max(len_sysid, max_len_sysid))
     tmpl = "{:<" + len_sysid + "} | {:>10}"
 
     lines.append(tmpl.format("System ID", "# Accounts"))
