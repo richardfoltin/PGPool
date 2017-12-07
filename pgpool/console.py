@@ -82,10 +82,13 @@ def print_stats(lines, db_updates_queue):
         print_stats_line(lines, "ALL", "1")
         print_stats_line(lines, "Unknown / New", "level is null")
         print_stats_line(lines, "In Use", "system_id is not null")
+        print_stats_line(lines, "Unassigned", "system_id is null")
         print_stats_line(lines, "Good", "banned = 0 and shadowbanned = 0")
-        print_stats_line(lines, "Only Blind", "banned = 0 and shadowbanned = 1")
+        print_stats_line(lines, "Blind", "banned = 0 and shadowbanned = 1")
         print_stats_line(lines, "Banned", "banned = 1")
         print_stats_line(lines, "Captcha", "captcha = 1")
+        lines.append("\n")
+        print_system_ids_overview(lines)
     except Exception as e:
         lines.append("Exception: {}".format(e))
 
@@ -107,6 +110,24 @@ def print_stats_line(lines, name, condition):
         elif row[0] == 'unknown':
             unknown = row[1]
     lines.append("{:<13} | {:>7} | {:>7} | {:>7} | {:>7}".format(name, low, high, unknown, low + high + unknown))
+
+
+def print_system_ids_overview(lines):
+    cursor = flaskDb.database.execute_sql('select system_id, count(*) from account group by system_id')
+    stats = {}
+    for row in cursor.fetchall():
+        if row[0]:
+            stats[row[0]] = row[1]
+
+    len_sysid = reduce(lambda l1, l2: max(l1, l2),
+                           map(lambda s: len(s), stats.iterkeys()))
+    len_sysid = str(max(9, len_sysid))
+    tmpl = "{:<" + len_sysid + "} | {:>10}"
+
+    lines.append(tmpl.format("System ID", "# Accounts"))
+
+    for sysid in sorted(stats.iterkeys()):
+        lines.append(tmpl.format(sysid, stats[sysid]))
 
 
 def print_lines(lines, print_entity, entities, addl_lines, state):

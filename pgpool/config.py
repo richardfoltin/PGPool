@@ -1,8 +1,11 @@
 import json
-import os
+import logging
 
 # Configuration with default values
 import configargparse
+import sys
+
+log = logging.getLogger(__name__)
 
 cfg = {
     'host': '127.0.0.1',
@@ -34,7 +37,15 @@ parser.add_argument('-i', '--import-csv',
 parser.add_argument('-l', '--level',
                     help=('Trainer level of imported accounts.'),
                     type=int, default=None)
+parser.add_argument('-cnd', '--condition',
+                    help=('Account condition of imported accounts. One of [unknown, good, banned, blind, captcha]. Default: unknown'),
+                    default='unknown')
 args = parser.parse_args()
+
+args.condition = args.condition.lower()
+if args.condition != 'unknown' and not args.level:
+    log.error("You must also specify a trainer level with --level if you force an account condition with --condition.")
+    sys.exit(1)
 
 with open(args.config, 'r') as f:
     user_cfg = json.loads(f.read())
