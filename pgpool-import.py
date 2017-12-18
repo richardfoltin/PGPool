@@ -94,6 +94,7 @@ for acc in accounts:
         account.auth_service = acc['auth_service']
         account.password = acc['password']
         account.level = args.level
+        account.system_id = args.system
         if args.condition != 'unknown':
             force_account_condition(account)
         account.save()

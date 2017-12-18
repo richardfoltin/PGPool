@@ -37,6 +37,9 @@ parser.add_argument('-i', '--import-csv',
 parser.add_argument('-l', '--level',
                     help=('Trainer level of imported accounts.'),
                     type=int, default=None)
+parser.add_argument('-s', '--system',
+                    help=('System ID.'),
+                    default=None)
 parser.add_argument('-cnd', '--condition',
                     help=('Account condition of imported accounts. One of [unknown, good, banned, blind, captcha]. Default: unknown'),
                     default='unknown')
