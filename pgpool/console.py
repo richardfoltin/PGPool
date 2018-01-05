@@ -19,6 +19,19 @@ log = logging.getLogger(__name__)
 
 default_log_level = 0
 
+stats_conditions = [
+    ("ALL", "1"),
+    ("Available", "system_id is null and banned = 0 and shadowbanned = 0"),
+    ("Assigned", "system_id is not null"),
+    ("Unassigned", "system_id is null"),
+    ("Good", "banned = 0 and shadowbanned = 0"),
+    ("Only Blind", "banned = 0 and shadowbanned = 1"),
+    ("Banned", "banned = 1"),
+    ("Captcha", "captcha = 1"),
+    ("Unknown / New", "level is null")
+]
+
+
 def input_processor(state):
     mainlog = logging.getLogger()
     global default_log_level
@@ -79,14 +92,9 @@ def print_stats(lines, db_updates_queue):
     try:
         lines.append("Condition     | L1-29   | L30+    | unknown | TOTAL")
 
-        print_stats_line(lines, "ALL", "1")
-        print_stats_line(lines, "Unknown / New", "level is null")
-        print_stats_line(lines, "In Use", "system_id is not null")
-        print_stats_line(lines, "Unassigned", "system_id is null")
-        print_stats_line(lines, "Good", "banned = 0 and shadowbanned = 0")
-        print_stats_line(lines, "Blind", "banned = 0 and shadowbanned = 1")
-        print_stats_line(lines, "Banned", "banned = 1")
-        print_stats_line(lines, "Captcha", "captcha = 1")
+        for c in stats_conditions:
+            print_stats_line(lines, c[0], c[1])
+
         lines.append("\n")
         print_system_ids_overview(lines)
     except Exception as e:

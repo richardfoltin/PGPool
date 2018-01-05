@@ -278,6 +278,7 @@ def db_updater(q, db):
 
 
 def new_account_event(acc, description):
+    description = (description[:189] + '..') if len(description) > 189 else description
     evt = Event(entity_type='account', entity_id=acc.username, description=description)
     evt.save()
     log.info("Event for account {}: {}".format(acc.username, description))

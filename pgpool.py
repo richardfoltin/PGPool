@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import abort
 
 from pgpool.config import cfg_get
-from pgpool.console import print_status
+from pgpool.console import print_status, stats_conditions
 from pgpool.models import init_database, db_updater, Account, auto_release, flaskDb
 
 # ---------------------------------------------------------------------------
@@ -35,16 +35,6 @@ def index():
 def status():
 
     headers = ["Condition", "L1-29", "L30+", "unknown", "TOTAL"]
-    conditions = [
-        ("ALL", "1"),
-        ("Unknown / New", "level is null"),
-        ("In Use", "system_id is not null"),
-        ("Good", "banned = 0 and shadowbanned = 0"),
-        ("Only Blind", "banned = 0 and shadowbanned = 1"),
-        ("Banned", "banned = 1"),
-        ("Captcha", "captcha = 1")
-    ]
-
     lines = "<style> th,td { padding-left: 10px; padding-right: 10px; border: 1px solid #ddd; } table { border-collapse: collapse } td { text-align:center }</style>"
     lines += "Mem Usage: {} | DB Queue Size: {} <br><br>".format(rss_mem_size(), db_updates_queue.qsize())
 
@@ -52,7 +42,7 @@ def status():
     for h in headers:
         lines += "<th>{}</th>".format(h)
 
-    for c in conditions:
+    for c in stats_conditions:
         cursor = flaskDb.database.execute_sql('''
             select (case when level < 30 then "low" when level >= 30 then "high" else "unknown" end) as category, count(*) from account
             where {}
