@@ -43,6 +43,12 @@ parser.add_argument('-s', '--system',
 parser.add_argument('-cnd', '--condition',
                     help=('Account condition of imported accounts. One of [unknown, good, banned, blind, captcha]. Default: unknown'),
                     default='unknown')
+parser.add_argument('-a', '--api',
+                    help=('Lemon2Go Subscription API'),
+                    default=None)
+parser.add_argument('-n', '--number',
+                    help=('Number of accounts to get from Lemon2go subscription'),
+                    type=int, default=1)
 args = parser.parse_args()
 
 args.condition = args.condition.lower()
