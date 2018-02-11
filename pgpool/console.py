@@ -21,11 +21,11 @@ default_log_level = 0
 
 stats_conditions = [
     ("ALL", "1"),
-    ("Available", "system_id is null and banned = 0 and shadowbanned = 0"),
+    ("Available", "system_id is null and banned = 0 and shadowbanned = 0 and captcha = 0"),
     ("Assigned", "system_id is not null"),
     ("Unassigned", "system_id is null"),
-    ("Good", "banned = 0 and shadowbanned = 0"),
-    ("Only Blind", "banned = 0 and shadowbanned = 1"),
+    ("Good", "banned = 0 and shadowbanned = 0 and captcha = 0"),
+    ("Shadowbanned", "banned = 0 and shadowbanned = 1"),
     ("Banned", "banned = 1"),
     ("Captcha", "captcha = 1"),
     ("Unknown / New", "level is null")
