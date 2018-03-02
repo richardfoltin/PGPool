@@ -108,7 +108,8 @@ class Account(flaskDb.Model):
                 # TODO: Add filter for nearby location
 
                 # Limitations and order
-                query = query.limit(count).order_by(+Account.last_modified)
+                #query = query.limit(count).order_by(Account.shadowbanned.desc(), Account.last_modified.asc())
+                query = query.limit(count).order_by(Account.last_modified.asc())
                 #log.warning("{}".format(query))
                 for account in query:
                     accounts.append({
