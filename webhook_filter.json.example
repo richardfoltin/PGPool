@@ -1,0 +1,35 @@
+{
+    "DISCORD_HIGH_LEVELS": {
+        "enabled": false,
+        "webhook": {
+            "url": "",
+            "data": {
+                "username": "PGPool",
+                "content": "[<system_id>] <username> (Level <level>): <message> after <running_time> hours."
+            }
+        },
+        "filter": {
+            "types": ["ban", "shadowban"],
+            "min_lvl": 30
+        }
+    },
+    "OTHER_FILTER_TEST": {
+        "enabled": false,
+        "webhook": {
+            "url": "[WEBHOOK_URL_GOES_HERE]",
+            "data": {
+                "username": "whatever you want",
+                "content": "These are the possible substitutions: <type>,<system_id>,<assigned_at>,<running_time>,<username>,<auth_service>,<latitude>,<longitude>,<level>,<xp>,<encounters>,<last_modified>,<warn>,<shadowbanned>,<banned>,<ban_flag>,<captcha>,<rareless_scans>,<message>,<good_low_level>,<good_high_level>,<good_total>",
+                "embed": "Set data to the parameters your webhook requires, all fields in data will have the above substitutions."
+            }
+        },
+        "filter": {
+            "types": ["assign","levelup","warn","shadowban","ban","banflag","captcha","release"],
+            "system_id": ["sys_id1", "sys_id2", "sys_id3"],
+            "min_lvl": 1,
+            "max_lvl": 40,
+            "low_lvl_threshold": 100,
+            "high_lvl_threshold": 5
+        }
+    }
+}

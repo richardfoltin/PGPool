@@ -3,3 +3,5 @@ peewee==2.8.1
 flask
 configargparse
 PyMySQL
+requests==2.13.0
+requests-futures==0.9.7
